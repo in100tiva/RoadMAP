@@ -1,2112 +1,756 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="light">
+<html lang="pt-BR" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roadmap de Projeto Web - Integrado com Supabase</title>
-    <!-- Tailwind CSS via CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <!-- DaisyUI via CDN -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Supabase JS (necessário para integração com banco de dados) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root {
-            --primary-color: #4f46e5;
-            --secondary-color: #0ea5e9;
-            --accent-color: #8b5cf6;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --error-color: #ef4444;
-            --info-color: #3b82f6;
-            --neutral-color: #6b7280;
-        }
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            color: #1f2937;
-            background-color: #f9fafb;
-        }
-        
-        .progress-line {
-            position: absolute;
-            left: 50%;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background-color: #e5e7eb;
-            transform: translateX(-50%);
-            z-index: 0;
-        }
-        
-        .progress-line-fill {
-            position: absolute;
-            left: 50%;
-            top: 0;
-            width: 4px;
-            background-color: var(--primary-color);
-            transform: translateX(-50%);
-            z-index: 1;
-            transition: height 0.5s ease;
-        }
-        
-        .phase-card {
-            position: relative;
-            z-index: 2;
-            transition: all 0.3s ease;
-            border-radius: 1rem;
-            overflow: hidden;
-        }
-        
-        .phase-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        
-        .phase-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.2);
-            color: white;
-            font-size: 1.5rem;
-        }
-        
-        .status-indicator {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            font-weight: 500;
-            font-size: 0.875rem;
-        }
-        
-        .status-pending {
-            background-color: #f3f4f6;
-            color: #6b7280;
-        }
-        
-        .status-in-progress {
-            background-color: #eff6ff;
-            color: #3b82f6;
-        }
-        
-        .status-completed {
-            background-color: #ecfdf5;
-            color: #10b981;
-        }
-        
-        .timeline-connector {
-            position: relative;
-            height: 2px;
-            background-color: #e5e7eb;
-            flex-grow: 1;
-        }
-        
-        .timeline-connector.active {
-            background-color: var(--primary-color);
-        }
-        
-        .timeline-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #e5e7eb;
-            border: 2px solid white;
-            box-shadow: 0 0 0 2px #e5e7eb;
-        }
-        
-        .timeline-dot.active {
-            background-color: var(--primary-color);
-            box-shadow: 0 0 0 2px var(--primary-color);
-        }
-        
-        .progress-bar {
-            height: 8px;
-            border-radius: 4px;
-            background-color: #e5e7eb;
-            overflow: hidden;
-        }
-        
-        .progress-bar-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-        
-        .task-item {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 0.5rem;
-            transition: background-color 0.2s ease;
-        }
-        
-        .task-item:hover {
-            background-color: #f3f4f6;
-        }
-        
-        .task-checkbox {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid #d1d5db;
-            margin-right: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 0.75rem;
-            cursor: pointer;
-        }
-        
-        .task-checkbox.completed {
-            background-color: var(--success-color);
-            border-color: var(--success-color);
-        }
-        
-        .phase-header {
-            border-radius: 0.75rem 0.75rem 0 0;
-            padding: 1.5rem;
-            color: white;
-        }
-        
-        .phase-1 { background-color: var(--primary-color); }
-        .phase-2 { background-color: var(--secondary-color); }
-        .phase-3 { background-color: var(--accent-color); }
-        .phase-4 { background-color: var(--info-color); }
-        .phase-5 { background-color: var(--success-color); }
-        .phase-6 { background-color: var(--warning-color); }
-        
-        .tooltip-container {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .tooltip-text {
-            visibility: hidden;
-            position: absolute;
-            z-index: 100;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #1f2937;
-            color: white;
-            text-align: center;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            white-space: nowrap;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .tooltip-container:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
-        
-        .tooltip-text::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #1f2937 transparent transparent transparent;
-        }
-        
-        .summary-card {
-            border-radius: 1rem;
-            background-color: white;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-        }
-        
-        .summary-card:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        
-        .summary-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            color: white;
-        }
-        
-        .summary-primary { background-color: var(--primary-color); }
-        .summary-secondary { background-color: var(--secondary-color); }
-        .summary-accent { background-color: var(--accent-color); }
-        .summary-success { background-color: var(--success-color); }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-right: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 0.5rem;
-        }
-        
-        .legend-pending { background-color: #d1d5db; }
-        .legend-progress { background-color: var(--info-color); }
-        .legend-completed { background-color: var(--success-color); }
-        
-        .print-button {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background-color: var(--primary-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .print-button:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-        
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .admin-panel {
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            z-index: 100;
-        }
-        
-        .admin-button {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background-color: var(--accent-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .admin-button:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-        
-        .modal-content {
-            background-color: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-        }
-        
-        .form-select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            background-color: white;
-        }
-        
-        .form-button {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .form-button-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .form-button-secondary {
-            background-color: #f3f4f6;
-            color: #1f2937;
-        }
-        
-        @media print {
-            .print-button, .admin-panel {
-                display: none;
-            }
-            
-            body {
-                background-color: white;
-            }
-            
-            .phase-card:hover {
-                transform: none;
-                box-shadow: none;
-            }
-            
-            .summary-card:hover {
-                box-shadow: none;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roadmap de Projeto Web - UX/UI Centrado no Usuário</title>
+<!-- Tailwind CSS via CDN -->
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<!-- DaisyUI via CDN -->
+<link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet">
+<!-- Font Awesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body class="min-h-screen pb-20">
-    <!-- Loading Spinner -->
-    <div id="loading" class="loading">
-        <div class="loading-spinner"></div>
-    </div>
-    
-    <!-- Admin Panel -->
-    <div class="admin-panel">
-        <div class="admin-button" id="adminButton">
-            <i class="fas fa-cog"></i>
+<!-- Cabeçalho do Projeto -->
+<header class="bg-gray-900 border-b border-gray-700 sticky top-0 z-10 shadow-md">
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-white flex items-center">
+                    <i class="fas fa-project-diagram text-primary mr-3"></i>
+                    Roadmap do Projeto
+                </h1>
+                <p class="text-gray-400 mt-1">Planejamento e cronograma de entregas</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex items-center">
+                <div class="flex items-center mr-6">
+                    <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                    <span class="text-sm font-medium text-gray-300">Projeto em andamento</span>
+                </div>
+                <div class="badge badge-primary p-3">
+                    <i class="far fa-calendar-alt mr-2"></i>
+                    01/05/2025 - 30/06/2025
+                </div>
+            </div>
         </div>
     </div>
-    
-    <!-- Admin Modal -->
-    <div id="adminModal" class="modal hidden">
-        <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4">Painel Administrativo</h2>
-            <div class="tabs mb-4">
-                <button class="tab tab-lifted tab-active" id="projectTab">Projeto</button>
-                <button class="tab tab-lifted" id="phasesTab">Fases</button>
-                <button class="tab tab-lifted" id="tasksTab">Tarefas</button>
-                <button class="tab tab-lifted" id="paymentsTab">Pagamentos</button>
-            </div>
-            
-            <!-- Projeto Form -->
-            <div id="projectForm" class="tab-content">
-                <div class="form-group">
-                    <label class="form-label" for="projectTitle">Título do Projeto</label>
-                    <input type="text" id="projectTitle" class="form-input" placeholder="Digite o título do projeto">
+</header>
+
+<!-- Resumo do Projeto -->
+<section class="container mx-auto px-4 py-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="summary-card">
+            <div class="flex items-start">
+                <div class="summary-icon summary-primary">
+                    <i class="fas fa-calendar-day"></i>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="projectDescription">Descrição</label>
-                    <textarea id="projectDescription" class="form-input" rows="3" placeholder="Digite a descrição do projeto"></textarea>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label class="form-label" for="projectStartDate">Data de Início</label>
-                        <input type="date" id="projectStartDate" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="projectEndDate">Data de Término</label>
-                        <input type="date" id="projectEndDate" class="form-input">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="projectProgress">Progresso Geral (%)</label>
-                    <input type="number" id="projectProgress" class="form-input" min="0" max="100" value="0">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="currentPhase">Fase Atual</label>
-                    <select id="currentPhase" class="form-select">
-                        <option value="1">Fase 1</option>
-                        <option value="2">Fase 2</option>
-                        <option value="3">Fase 3</option>
-                        <option value="4">Fase 4</option>
-                        <option value="5">Fase 5</option>
-                        <option value="6">Fase 6</option>
-                    </select>
-                </div>
-                <div class="flex justify-end gap-2 mt-4">
-                    <button class="form-button form-button-secondary" id="closeProjectModal">Cancelar</button>
-                    <button class="form-button form-button-primary" id="saveProject">Salvar</button>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-400">Duração Total</h3>
+                    <p class="text-2xl font-bold text-white mt-1">60 dias</p>
+                    <p class="text-sm text-gray-400 mt-1">01/05/2025 - 30/06/2025</p>
                 </div>
             </div>
-            
-            <!-- Fases Form -->
-            <div id="phasesForm" class="tab-content hidden">
-                <div class="form-group">
-                    <label class="form-label" for="phaseSelect">Selecionar Fase</label>
-                    <select id="phaseSelect" class="form-select">
-                        <option value="1">Fase 1: Descoberta e Planejamento</option>
-                        <option value="2">Fase 2: Design UI/UX</option>
-                        <option value="3">Fase 3: Desenvolvimento Frontend</option>
-                        <option value="4">Fase 4: Desenvolvimento Backend</option>
-                        <option value="5">Fase 5: Testes e Otimização</option>
-                        <option value="6">Fase 6: Lançamento e Entrega</option>
-                    </select>
+        </div>
+        
+        <div class="summary-card">
+            <div class="flex items-start">
+                <div class="summary-icon summary-secondary">
+                    <i class="fas fa-tasks"></i>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="phaseTitle">Título da Fase</label>
-                    <input type="text" id="phaseTitle" class="form-input" placeholder="Digite o título da fase">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="phaseDescription">Descrição</label>
-                    <textarea id="phaseDescription" class="form-input" rows="3" placeholder="Digite a descrição da fase"></textarea>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label class="form-label" for="phaseStartDate">Data de Início</label>
-                        <input type="date" id="phaseStartDate" class="form-input">
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-400">Progresso Geral</h3>
+                    <p class="text-2xl font-bold text-white mt-1">35%</p>
+                    <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2">
+                        <div class="bg-blue-500 h-2.5 rounded-full" style="width: 35%"></div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label" for="phaseEndDate">Data de Término</label>
-                        <input type="date" id="phaseEndDate" class="form-input">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="phaseStatus">Status</label>
-                    <select id="phaseStatus" class="form-select">
-                        <option value="pending">Pendente</option>
-                        <option value="in-progress">Em Andamento</option>
-                        <option value="completed">Concluído</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="phaseProgress">Progresso (%)</label>
-                    <input type="number" id="phaseProgress" class="form-input" min="0" max="100" value="0">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="phaseIcon">Ícone (classe Font Awesome)</label>
-                    <input type="text" id="phaseIcon" class="form-input" placeholder="Ex: fas fa-search">
-                </div>
-                <div class="flex justify-end gap-2 mt-4">
-                    <button class="form-button form-button-secondary" id="closePhasesModal">Cancelar</button>
-                    <button class="form-button form-button-primary" id="savePhase">Salvar</button>
                 </div>
             </div>
-            
-            <!-- Tarefas Form -->
-            <div id="tasksForm" class="tab-content hidden">
-                <div class="form-group">
-                    <label class="form-label" for="taskPhaseSelect">Selecionar Fase</label>
-                    <select id="taskPhaseSelect" class="form-select">
-                        <option value="1">Fase 1: Descoberta e Planejamento</option>
-                        <option value="2">Fase 2: Design UI/UX</option>
-                        <option value="3">Fase 3: Desenvolvimento Frontend</option>
-                        <option value="4">Fase 4: Desenvolvimento Backend</option>
-                        <option value="5">Fase 5: Testes e Otimização</option>
-                        <option value="6">Fase 6: Lançamento e Entrega</option>
-                    </select>
+        </div>
+        
+        <div class="summary-card">
+            <div class="flex items-start">
+                <div class="summary-icon summary-accent">
+                    <i class="fas fa-flag-checkered"></i>
                 </div>
-                <div id="tasksList" class="mb-4">
-                    <!-- Tasks will be loaded here -->
-                    <p class="text-gray-500 text-center py-4">Selecione uma fase para ver as tarefas</p>
-                </div>
-                <div class="border-t pt-4">
-                    <h3 class="font-medium text-lg mb-3">Adicionar Nova Tarefa</h3>
-                    <div class="form-group">
-                        <label class="form-label" for="taskTitle">Título da Tarefa</label>
-                        <input type="text" id="taskTitle" class="form-input" placeholder="Digite o título da tarefa">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="taskDescription">Descrição</label>
-                        <textarea id="taskDescription" class="form-input" rows="2" placeholder="Digite a descrição da tarefa"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="taskDueDate">Data de Entrega</label>
-                        <input type="date" id="taskDueDate" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="taskStatus">Status</label>
-                        <select id="taskStatus" class="form-select">
-                            <option value="pending">Pendente</option>
-                            <option value="in-progress">Em Andamento</option>
-                            <option value="completed">Concluído</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-2 mt-4">
-                    <button class="form-button form-button-secondary" id="closeTasksModal">Cancelar</button>
-                    <button class="form-button form-button-primary" id="addTask">Adicionar Tarefa</button>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-400">Fase Atual</h3>
+                    <p class="text-2xl font-bold text-white mt-1">Design UI/UX</p>
+                    <p class="text-sm text-gray-400 mt-1">Fase 2 de 6</p>
                 </div>
             </div>
-            
-            <!-- Pagamentos Form -->
-            <div id="paymentsForm" class="tab-content hidden">
-                <div id="paymentsList" class="mb-4">
-                    <!-- Payments will be loaded here -->
-                    <p class="text-gray-500 text-center py-4">Carregando pagamentos...</p>
+        </div>
+        
+        <div class="summary-card">
+            <div class="flex items-start">
+                <div class="summary-icon summary-success">
+                    <i class="fas fa-check-circle"></i>
                 </div>
-                <div class="border-t pt-4">
-                    <h3 class="font-medium text-lg mb-3">Adicionar Novo Pagamento</h3>
-                    <div class="form-group">
-                        <label class="form-label" for="paymentTitle">Descrição do Pagamento</label>
-                        <input type="text" id="paymentTitle" class="form-input" placeholder="Ex: Entrada - Início do Projeto">
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="form-group">
-                            <label class="form-label" for="paymentAmount">Valor (R$)</label>
-                            <input type="number" id="paymentAmount" class="form-input" min="0" step="0.01">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" for="paymentPercentage">Porcentagem (%)</label>
-                            <input type="number" id="paymentPercentage" class="form-input" min="0" max="100">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="paymentDueDate">Data de Vencimento</label>
-                        <input type="date" id="paymentDueDate" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="paymentStatus">Status</label>
-                        <select id="paymentStatus" class="form-select">
-                            <option value="pending">Pendente</option>
-                            <option value="paid">Pago</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-2 mt-4">
-                    <button class="form-button form-button-secondary" id="closePaymentsModal">Cancelar</button>
-                    <button class="form-button form-button-primary" id="addPayment">Adicionar Pagamento</button>
+                <div class="ml-4">
+                    <h3 class="text-sm font-medium text-gray-400">Próximo Marco</h3>
+                    <p class="text-2xl font-bold text-white mt-1">21/05/2025</p>
+                    <p class="text-sm text-gray-400 mt-1">Aprovação de Design</p>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Cabeçalho do Projeto -->
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
-                        <i class="fas fa-project-diagram text-primary mr-3"></i>
-                        <span id="projectTitleHeader">Roadmap do Projeto</span>
-                    </h1>
-                    <p class="text-gray-600 mt-1" id="projectDescriptionHeader">Planejamento e cronograma de entregas</p>
-                </div>
-                <div class="mt-4 md:mt-0 flex items-center">
-                    <div class="flex items-center mr-6">
-                        <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                        <span class="text-sm font-medium">Projeto em andamento</span>
-                    </div>
-                    <div class="badge badge-primary p-3">
-                        <i class="far fa-calendar-alt mr-2"></i>
-                        <span id="projectDateRange">01/05/2025 - 30/06/2025</span>
-                    </div>
-                </div>
-            </div>
+    <!-- Legenda -->
+    <div class="bg-gray-900 rounded-lg shadow-md p-4 mt-6 flex flex-wrap items-center border border-gray-700">
+        <span class="font-medium text-gray-300 mr-4">Status:</span>
+        <div class="legend-item">
+            <div class="legend-color legend-pending"></div>
+            <span class="text-sm text-gray-300">Pendente</span>
         </div>
-    </header>
-
-    <!-- Resumo do Projeto -->
-    <section class="container mx-auto px-4 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="summary-card">
-                <div class="flex items-start">
-                    <div class="summary-icon summary-primary">
-                        <i class="fas fa-calendar-day"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-sm font-medium text-gray-500">Duração Total</h3>
-                        <p class="text-2xl font-bold text-gray-900 mt-1" id="projectDuration">60 dias</p>
-                        <p class="text-sm text-gray-600 mt-1" id="projectDates">01/05/2025 - 30/06/2025</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="summary-card">
-                <div class="flex items-start">
-                    <div class="summary-icon summary-secondary">
-                        <i class="fas fa-tasks"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-sm font-medium text-gray-500">Progresso Geral</h3>
-                        <p class="text-2xl font-bold text-gray-900 mt-1" id="projectProgressText">35%</p>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                            <div class="bg-blue-500 h-2.5 rounded-full" id="projectProgressBar" style="width: 35%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="summary-card">
-                <div class="flex items-start">
-                    <div class="summary-icon summary-accent">
-                        <i class="fas fa-flag-checkered"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-sm font-medium text-gray-500">Fase Atual</h3>
-                        <p class="text-2xl font-bold text-gray-900 mt-1" id="currentPhaseText">Design UI/UX</p>
-                        <p class="text-sm text-gray-600 mt-1" id="currentPhaseNumber">Fase 2 de 6</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="summary-card">
-                <div class="flex items-start">
-                    <div class="summary-icon summary-success">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-sm font-medium text-gray-500">Próximo Marco</h3>
-                        <p class="text-2xl font-bold text-gray-900 mt-1" id="nextMilestoneDate">21/05/2025</p>
-                        <p class="text-sm text-gray-600 mt-1" id="nextMilestoneText">Aprovação de Design</p>
-                    </div>
-                </div>
-            </div>
+        <div class="legend-item">
+            <div class="legend-color legend-progress"></div>
+            <span class="text-sm text-gray-300">Em Andamento</span>
         </div>
-        
-        <!-- Legenda -->
-        <div class="bg-white rounded-lg shadow-sm p-4 mt-6 flex flex-wrap items-center">
-            <span class="font-medium text-gray-700 mr-4">Status:</span>
-            <div class="legend-item">
-                <div class="legend-color legend-pending"></div>
-                <span class="text-sm">Pendente</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color legend-progress"></div>
-                <span class="text-sm">Em Andamento</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color legend-completed"></div>
-                <span class="text-sm">Concluído</span>
-            </div>
+        <div class="legend-item">
+            <div class="legend-color legend-completed"></div>
+            <span class="text-sm text-gray-300">Concluído</span>
         </div>
-    </section>
-
-    <!-- Timeline Visual -->
-    <section class="container mx-auto px-4 py-4 mb-8">
-        <div class="bg-white rounded-lg shadow-sm p-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-6">Linha do Tempo do Projeto</h2>
-            <div class="flex items-center justify-between" id="timelineDots">
-                <!-- Timeline dots will be generated here -->
-            </div>
-            <div class="flex items-center justify-between mt-2" id="timelineLabels">
-                <!-- Timeline labels will be generated here -->
-            </div>
-        </div>
-    </section>
-
-    <!-- Fases do Projeto -->
-    <section class="container mx-auto px-4 relative" id="phasesContainer">
-        <div class="progress-line"></div>
-        <div class="progress-line-fill" id="progressLineFill" style="height: 35%;"></div>
-        
-        <!-- Phases will be generated here -->
-    </section>
-    
-    <!-- Informações Adicionais -->
-    <section class="container mx-auto px-4 py-8">
-        <div class="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
-            <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <i class="fas fa-info-circle text-primary mr-2"></i>
-                Informações Adicionais
-            </h2>
-            <div class="divider"></div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <h3 class="font-medium text-gray-900 mb-3">Comunicação</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center p-3 bg-blue-50 rounded-lg border border-blue-100">
-                            <i class="fas fa-video text-blue-500 mr-3"></i>
-                            <div>
-                                <span class="font-medium">Reuniões Semanais</span>
-                                <span class="text-sm text-gray-600 block">Toda segunda-feira às 10h</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center p-3 bg-blue-50 rounded-lg border border-blue-100">
-                            <i class="fas fa-comments text-blue-500 mr-3"></i>
-                            <div>
-                                <span class="font-medium">Atualizações Diárias</span>
-                                <span class="text-sm text-gray-600 block">Via e-mail ou chat</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div>
-                    <h3 class="font-medium text-gray-900 mb-3">Pagamentos</h3>
-                    <div class="space-y-3" id="paymentsContainer">
-                        <!-- Payments will be generated here -->
-                    </div>
-                </div>
-            </div>
-            
-            <div class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-100">
-                <div class="flex items-start">
-                    <i class="fas fa-exclamation-triangle text-yellow-500 mt-1 mr-3"></i>
-                    <div>
-                        <span class="font-medium">Observação Importante</span>
-                        <p class="text-sm text-gray-700 mt-1">Este roadmap é um documento vivo e pode ser ajustado conforme o andamento do projeto. Alterações significativas no escopo podem impactar o cronograma e os custos. Todas as mudanças serão comunicadas e acordadas previamente.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Botão de Impressão -->
-    <div class="print-button" id="printButton">
-        <i class="fas fa-print"></i>
     </div>
+</section>
 
-    <!-- Script para integração com Supabase -->
-    <script>
-        // Inicialização do Supabase
-        const SUPABASE_URL = 'https://ofufffgsfdlqwnovljmn.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mdWZmZmdzZmRscXdub3Zsam1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4MjkyNDEsImV4cCI6MjA2MDQwNTI0MX0.c5oio_-21W8cstBtrj6vdZBXPHdnmqMEYCyXntDHazs';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-        // Variáveis globais
-        let currentProject = null;
-        let phases = [];
-        let tasks = [];
-        let payments = [];
-        
-        // Elementos DOM
-        const loadingElement = document.getElementById('loading');
-        const adminButton = document.getElementById('adminButton');
-        const adminModal = document.getElementById('adminModal');
-        const projectTab = document.getElementById('projectTab');
-        const phasesTab = document.getElementById('phasesTab');
-        const tasksTab = document.getElementById('tasksTab');
-        const paymentsTab = document.getElementById('paymentsTab');
-        const projectForm = document.getElementById('projectForm');
-        const phasesForm = document.getElementById('phasesForm');
-        const tasksForm = document.getElementById('tasksForm');
-        const paymentsForm = document.getElementById('paymentsForm');
-        const closeProjectModal = document.getElementById('closeProjectModal');
-        const closePhasesModal = document.getElementById('closePhasesModal');
-        const closeTasksModal = document.getElementById('closeTasksModal');
-        const closePaymentsModal = document.getElementById('closePaymentsModal');
-        const saveProject = document.getElementById('saveProject');
-        const savePhase = document.getElementById('savePhase');
-        const addTask = document.getElementById('addTask');
-        const addPayment = document.getElementById('addPayment');
-        const printButton = document.getElementById('printButton');
-        const phaseSelect = document.getElementById('phaseSelect');
-        const taskPhaseSelect = document.getElementById('taskPhaseSelect');
-        
-        // Funções de inicialização
-        async function init() {
-            try {
-                // Carregar projeto atual
-                await loadCurrentProject();
-                
-                // Carregar fases
-                await loadPhases();
-                
-                // Carregar tarefas
-                await loadTasks();
-                
-                // Carregar pagamentos
-                await loadPayments();
-                
-                // Renderizar interface
-                renderProject();
-                renderTimeline();
-                renderPhases();
-                renderPayments();
-                
-                // Esconder loading
-                loadingElement.classList.add('hidden');
-            } catch (error) {
-                console.error('Erro ao inicializar:', error);
-                alert('Erro ao carregar dados. Verifique o console para mais detalhes.');
-                loadingElement.classList.add('hidden');
-            }
-        }
-        
-        // Funções para carregar dados do Supabase
-        async function loadCurrentProject() {
-            const { data, error } = await supabase
-                .from('projects')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(1);
-                
-            if (error) throw error;
-            
-            if (data && data.length > 0) {
-                currentProject = data[0];
-            } else {
-                // Criar projeto padrão se não existir
-                await createDefaultProject();
-            }
-        }
-        
-        async function createDefaultProject() {
-            const defaultProject = {
-                title: 'Roadmap do Projeto',
-                description: 'Planejamento e cronograma de entregas',
-                start_date: '2025-05-01',
-                end_date: '2025-06-30',
-                progress: 35,
-                current_phase: 2
-            };
-            
-            const { data, error } = await supabase
-                .from('projects')
-                .insert([defaultProject])
-                .select();
-                
-            if (error) throw error;
-            
-            if (data && data.length > 0) {
-                currentProject = data[0];
-                await createDefaultPhases();
-            }
-        }
-        
-        async function createDefaultPhases() {
-            const defaultPhases = [
-                {
-                    project_id: currentProject.id,
-                    title: 'Descoberta e Planejamento',
-                    description: 'Levantamento de requisitos, entendimento do negócio e definição do escopo do projeto. Criação de wireframes e aprovação do planejamento inicial.',
-                    phase_number: 1,
-                    start_date: '2025-05-01',
-                    end_date: '2025-05-07',
-                    status: 'completed',
-                    progress: 100,
-                    icon: 'fas fa-search',
-                    color: 'var(--primary-color)'
-                },
-                {
-                    project_id: currentProject.id,
-                    title: 'Design UI/UX',
-                    description: 'Criação do design visual do projeto, incluindo identidade visual, paleta de cores, tipografia e layouts de todas as páginas principais.',
-                    phase_number: 2,
-                    start_date: '2025-05-08',
-                    end_date: '2025-05-21',
-                    status: 'in-progress',
-                    progress: 60,
-                    icon: 'fas fa-palette',
-                    color: 'var(--secondary-color)'
-                },
-                {
-                    project_id: currentProject.id,
-                    title: 'Desenvolvimento Frontend',
-                    description: 'Codificação da interface do usuário, implementação do design aprovado em HTML/CSS, garantindo responsividade e compatibilidade com diferentes navegadores.',
-                    phase_number: 3,
-                    start_date: '2025-05-22',
-                    end_date: '2025-06-04',
-                    status: 'pending',
-                    progress: 0,
-                    icon: 'fas fa-code',
-                    color: 'var(--accent-color)'
-                },
-                {
-                    project_id: currentProject.id,
-                    title: 'Desenvolvimento Backend',
-                    description: 'Implementação da lógica de negócios, banco de dados, APIs e funcionalidades do sistema. Integração com serviços de terceiros conforme necessário.',
-                    phase_number: 4,
-                    start_date: '2025-06-05',
-                    end_date: '2025-06-18',
-                    status: 'pending',
-                    progress: 0,
-                    icon: 'fas fa-database',
-                    color: 'var(--info-color)'
-                },
-                {
-                    project_id: currentProject.id,
-                    title: 'Testes e Otimização',
-                    description: 'Testes de usabilidade, performance e segurança. Correção de bugs e otimização do código para melhor desempenho e experiência do usuário.',
-                    phase_number: 5,
-                    start_date: '2025-06-19',
-                    end_date: '2025-06-25',
-                    status: 'pending',
-                    progress: 0,
-                    icon: 'fas fa-vial',
-                    color: 'var(--success-color)'
-                },
-                {
-                    project_id: currentProject.id,
-                    title: 'Lançamento e Entrega',
-                    description: 'Implantação do projeto em ambiente de produção, configuração de domínio, SSL e servidores. Treinamento do cliente e documentação final.',
-                    phase_number: 6,
-                    start_date: '2025-06-26',
-                    end_date: '2025-06-30',
-                    status: 'pending',
-                    progress: 0,
-                    icon: 'fas fa-rocket',
-                    color: 'var(--warning-color)'
-                }
-            ];
-            
-            const { error } = await supabase
-                .from('phases')
-                .insert(defaultPhases);
-                
-            if (error) throw error;
-            
-            // Criar tarefas padrão
-            await createDefaultTasks();
-            
-            // Criar pagamentos padrão
-            await createDefaultPayments();
-        }
-        
-        async function createDefaultTasks() {
-            // Carregar fases criadas
-            const { data: phasesData, error: phasesError } = await supabase
-                .from('phases')
-                .select('*')
-                .eq('project_id', currentProject.id)
-                .order('phase_number', { ascending: true });
-                
-            if (phasesError) throw phasesError;
-            
-            if (phasesData && phasesData.length > 0) {
-                const phase1 = phasesData.find(p => p.phase_number === 1);
-                const phase2 = phasesData.find(p => p.phase_number === 2);
-                
-                if (phase1) {
-                    const phase1Tasks = [
-                        {
-                            phase_id: phase1.id,
-                            title: 'Reunião de Briefing',
-                            description: 'Levantamento inicial de requisitos',
-                            due_date: '2025-05-01',
-                            status: 'completed'
-                        },
-                        {
-                            phase_id: phase1.id,
-                            title: 'Análise de Requisitos',
-                            description: 'Documentação detalhada das necessidades',
-                            due_date: '2025-05-03',
-                            status: 'completed'
-                        },
-                        {
-                            phase_id: phase1.id,
-                            title: 'Criação de Wireframes',
-                            description: 'Esboço das principais telas',
-                            due_date: '2025-05-05',
-                            status: 'completed'
-                        },
-                        {
-                            phase_id: phase1.id,
-                            title: 'Aprovação do Planejamento',
-                            description: 'Validação do escopo e cronograma',
-                            due_date: '2025-05-07',
-                            status: 'completed'
-                        }
-                    ];
-                    
-                    const { error: tasksError } = await supabase
-                        .from('tasks')
-                        .insert(phase1Tasks);
-                        
-                    if (tasksError) throw tasksError;
-                }
-                
-                if (phase2) {
-                    const phase2Tasks = [
-                        {
-                            phase_id: phase2.id,
-                            title: 'Definição de Identidade Visual',
-                            description: 'Cores, tipografia e elementos de marca',
-                            due_date: '2025-05-10',
-                            status: 'completed'
-                        },
-                        {
-                            phase_id: phase2.id,
-                            title: 'Design da Homepage',
-                            description: 'Layout da página inicial',
-                            due_date: '2025-05-14',
-                            status: 'completed'
-                        },
-                        {
-                            phase_id: phase2.id,
-                            title: 'Design das Páginas Internas',
-                            description: 'Layouts de todas as páginas secundárias',
-                            due_date: '2025-05-18',
-                            status: 'in-progress'
-                        },
-                        {
-                            phase_id: phase2.id,
-                            title: 'Aprovação Final do Design',
-                            description: 'Validação com o cliente',
-                            due_date: '2025-05-21',
-                            status: 'pending'
-                        }
-                    ];
-                    
-                    const { error: tasksError } = await supabase
-                        .from('tasks')
-                        .insert(phase2Tasks);
-                        
-                    if (tasksError) throw tasksError;
-                }
-            }
-        }
-        
-        async function createDefaultPayments() {
-            const defaultPayments = [
-                {
-                    project_id: currentProject.id,
-                    title: '30% - Início do Projeto',
-                    amount: 3000.00,
-                    percentage: 30,
-                    due_date: '2025-05-01',
-                    status: 'paid'
-                },
-                {
-                    project_id: currentProject.id,
-                    title: '40% - Aprovação do Design',
-                    amount: 4000.00,
-                    percentage: 40,
-                    due_date: '2025-05-21',
-                    status: 'pending'
-                },
-                {
-                    project_id: currentProject.id,
-                    title: '30% - Entrega Final',
-                    amount: 3000.00,
-                    percentage: 30,
-                    due_date: '2025-06-30',
-                    status: 'pending'
-                }
-            ];
-            
-            const { error } = await supabase
-                .from('payments')
-                .insert(defaultPayments);
-                
-            if (error) throw error;
-        }
-        
-        async function loadPhases() {
-            if (!currentProject) return;
-            
-            const { data, error } = await supabase
-                .from('phases')
-                .select('*')
-                .eq('project_id', currentProject.id)
-                .order('phase_number', { ascending: true });
-                
-            if (error) throw error;
-            
-            phases = data || [];
-        }
-        
-        async function loadTasks() {
-            if (!currentProject) return;
-            
-            const { data, error } = await supabase
-                .from('tasks')
-                .select('*')
-                .order('due_date', { ascending: true });
-                
-            if (error) throw error;
-            
-            tasks = data || [];
-        }
-        
-        async function loadPayments() {
-            if (!currentProject) return;
-            
-            const { data, error } = await supabase
-                .from('payments')
-                .select('*')
-                .eq('project_id', currentProject.id)
-                .order('due_date', { ascending: true });
-                
-            if (error) throw error;
-            
-            payments = data || [];
-        }
-        
-        // Funções para renderizar a interface
-        function renderProject() {
-            if (!currentProject) return;
-            
-            // Atualizar cabeçalho
-            document.getElementById('projectTitleHeader').textContent = currentProject.title;
-            document.getElementById('projectDescriptionHeader').textContent = currentProject.description;
-            
-            // Formatar datas
-            const startDate = new Date(currentProject.start_date);
-            const endDate = new Date(currentProject.end_date);
-            const formattedStartDate = formatDate(startDate);
-            const formattedEndDate = formatDate(endDate);
-            const dateRange = `${formattedStartDate} - ${formattedEndDate}`;
-            
-            // Calcular duração em dias
-            const durationDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-            
-            // Atualizar resumo do projeto
-            document.getElementById('projectDateRange').textContent = dateRange;
-            document.getElementById('projectDuration').textContent = `${durationDays} dias`;
-            document.getElementById('projectDates').textContent = dateRange;
-            document.getElementById('projectProgressText').textContent = `${currentProject.progress}%`;
-            document.getElementById('projectProgressBar').style.width = `${currentProject.progress}%`;
-            
-            // Atualizar fase atual
-            if (phases.length > 0) {
-                const currentPhase = phases.find(p => p.phase_number === currentProject.current_phase);
-                if (currentPhase) {
-                    document.getElementById('currentPhaseText').textContent = currentPhase.title;
-                    document.getElementById('currentPhaseNumber').textContent = `Fase ${currentPhase.phase_number} de ${phases.length}`;
-                }
-            }
-            
-            // Atualizar próximo marco
-            const nextPhase = phases.find(p => p.status === 'in-progress');
-            if (nextPhase) {
-                const nextTask = tasks.find(t => t.phase_id === nextPhase.id && t.status === 'pending');
-                if (nextTask) {
-                    document.getElementById('nextMilestoneDate').textContent = formatDate(new Date(nextTask.due_date));
-                    document.getElementById('nextMilestoneText').textContent = nextTask.title;
-                }
-            }
-            
-            // Atualizar progresso da linha
-            document.getElementById('progressLineFill').style.height = `${currentProject.progress}%`;
-            
-            // Preencher formulário do projeto
-            document.getElementById('projectTitle').value = currentProject.title;
-            document.getElementById('projectDescription').value = currentProject.description;
-            document.getElementById('projectStartDate').value = currentProject.start_date;
-            document.getElementById('projectEndDate').value = currentProject.end_date;
-            document.getElementById('projectProgress').value = currentProject.progress;
-            document.getElementById('currentPhase').value = currentProject.current_phase;
-        }
-        
-        function renderTimeline() {
-            if (!phases || phases.length === 0) return;
-            
-            const timelineDotsContainer = document.getElementById('timelineDots');
-            const timelineLabelsContainer = document.getElementById('timelineLabels');
-            
-            timelineDotsContainer.innerHTML = '';
-            timelineLabelsContainer.innerHTML = '';
-            
-            phases.forEach((phase, index) => {
-                // Adicionar dot
-                const dot = document.createElement('div');
-                dot.className = `timeline-dot ${phase.status !== 'pending' ? 'active' : ''}`;
-                timelineDotsContainer.appendChild(dot);
-                
-                // Adicionar connector se não for o último
-                if (index < phases.length - 1) {
-                    const connector = document.createElement('div');
-                    connector.className = `timeline-connector ${phase.status === 'completed' ? 'active' : ''}`;
-                    timelineDotsContainer.appendChild(connector);
-                }
-                
-                // Adicionar label
-                const label = document.createElement('div');
-                label.className = 'text-xs font-medium text-center w-20';
-                
-                const status = document.createElement('div');
-                if (phase.status === 'completed') {
-                    status.className = 'status-indicator status-completed';
-                    status.innerHTML = '<i class="fas fa-check-circle mr-1"></i>Concluído';
-                } else if (phase.status === 'in-progress') {
-                    status.className = 'status-indicator status-in-progress';
-                    status.innerHTML = '<i class="fas fa-spinner mr-1"></i>Atual';
-                } else {
-                    status.className = 'status-indicator status-pending';
-                    status.innerHTML = '<i class="fas fa-clock mr-1"></i>Pendente';
-                }
-                
-                const date = document.createElement('span');
-                date.className = 'block mt-1 text-gray-600';
-                date.textContent = formatDate(new Date(phase.start_date)).split('/').slice(0, 2).join('/');
-                
-                label.appendChild(status);
-                label.appendChild(date);
-                timelineLabelsContainer.appendChild(label);
-            });
-        }
-        
-        function renderPhases() {
-            if (!phases || phases.length === 0) return;
-            
-            const phasesContainer = document.getElementById('phasesContainer');
-            
-            // Manter a linha de progresso
-            const progressLine = phasesContainer.querySelector('.progress-line');
-            const progressLineFill = phasesContainer.querySelector('.progress-line-fill');
-            
-            // Limpar container mantendo a linha de progresso
-            phasesContainer.innerHTML = '';
-            phasesContainer.appendChild(progressLine);
-            phasesContainer.appendChild(progressLineFill);
-            
-            phases.forEach(phase => {
-                const phaseCard = createPhaseCard(phase);
-                phasesContainer.appendChild(phaseCard);
-            });
-        }
-        
-        function createPhaseCard(phase) {
-            const phaseCard = document.createElement('div');
-            phaseCard.className = 'phase-card bg-white shadow-md mb-8 max-w-4xl mx-auto';
-            
-            // Header da fase
-            const phaseHeader = document.createElement('div');
-            phaseHeader.className = `phase-header phase-${phase.phase_number}`;
-            phaseHeader.style.backgroundColor = phase.color;
-            
-            // Conteúdo do header
-            const headerContent = `
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="phase-icon">
-                            <i class="${phase.icon}"></i>
-                        </div>
-                        <div class="ml-4">
-                            <h2 class="text-xl font-bold">${phase.title}</h2>
-                            <div class="flex items-center mt-1">
-                                <span class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">Fase ${phase.phase_number}</span>
-                                <span class="text-sm ml-3 opacity-90">${formatDate(new Date(phase.start_date))} - ${formatDate(new Date(phase.end_date))}</span>
-                            </div>
-                        </div>
+<!-- Timeline Visual -->
+<section class="container mx-auto px-4 py-4 mb-8">
+    <div class="bg-gray-900 rounded-lg shadow-md p-6 border border-gray-700">
+        <h2 class="text-xl font-bold text-white mb-6">Linha do Tempo do Projeto</h2>
+        <div class="flex items-center justify-between">
+            <div class="timeline-dot active"></div>
+            <div class="timeline-connector active"></div>
+            <div class="timeline-dot active"></div>
+            <div class="timeline-connector"></div>
+            <div class="timeline-dot"></div>
+            <div class="timeline-connector"></div>
+            <div class="timeline-dot"></div>
+            <div class="timeline-connector"></div>
+            <div class="timeline-dot"></div>
+            <div class="timeline-connector"></div>
+            <div class="timeline-dot"></div>
+        </div>
+        <div class="flex items-center justify-between mt-2">
+            <div class="text-xs font-medium text-center w-20">
+                <div class="status-indicator status-completed">
+                    <i class="fas fa-check-circle mr-1"></i>
+                    Concluído
+                </div>
+                <span class="block mt-1 text-gray-400">01/05</span>
+            </div>
+            <div class="text-xs font-medium text-center w-20">
+                <div class="status-indicator status-in-progress">
+                    <i class="fas fa-spinner mr-1"></i>
+                    Atual
+                </div>
+                <span class="block mt-1 text-gray-400">08/05</span>
+            </div>
+            <div class="text-xs font-medium text-center w-20">
+                <div class="status-indicator status-pending">
+                    <i class="fas fa-clock mr-1"></i>
+                    Pendente
+                </div>
+                <span class="block mt-1 text-gray-400">22/05</span>
+            </div>
+            <div class="text-xs font-medium text-center w-20">
+                <div class="status-indicator status-pending">
+                    <i class="fas fa-clock mr-1"></i>
+                    Pendente
+                </div>
+                <span class="block mt-1 text-gray-400">05/06</span>
+            </div>
+            <div class="text-xs font-medium text-center w-20">
+                <div class="status-indicator status-pending">
+                    <i class="fas fa-clock mr-1"></i>
+                    Pendente
+                </div>
+                <span class="block mt-1 text-gray-400">19/06</span>
+            </div>
+            <div class="text-xs font-medium text-center w-20">
+                <div class="status-indicator status-pending">
+                    <i class="fas fa-clock mr-1"></i>
+                    Pendente
+                </div>
+                <span class="block mt-1 text-gray-400">26/06</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Fases do Projeto -->
+<section class="container mx-auto px-4 relative">
+    <div class="progress-line"></div>
+    <div class="progress-line-fill" style="height: 35%;"></div>
+    
+    <!-- Fase 1: Descoberta e Planejamento -->
+    <div class="phase-card mb-8 max-w-4xl mx-auto">
+        <div class="phase-header phase-1">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="phase-icon">
+                        <i class="fas fa-search"></i>
                     </div>
-                    <div class="status-indicator ${getStatusClass(phase.status)}">
-                        <i class="${getStatusIcon(phase.status)} mr-1"></i>${getStatusText(phase.status)}
+                    <div class="ml-4">
+                        <h2 class="text-xl font-bold">Descoberta e Planejamento</h2>
+                        <div class="flex items-center mt-1">
+                            <span class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">Fase 1</span>
+                            <span class="text-sm ml-3 opacity-90">01/05/2025 - 07/05/2025</span>
+                        </div>
                     </div>
                 </div>
-            `;
+                <div class="status-indicator status-completed">
+                    <i class="fas fa-check-circle mr-1"></i>
+                    Concluído
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-300">Levantamento de requisitos, entendimento do negócio e definição do escopo do projeto. Criação de wireframes e aprovação do planejamento inicial.</p>
             
-            phaseHeader.innerHTML = headerContent;
-            phaseCard.appendChild(phaseHeader);
-            
-            // Conteúdo da fase
-            const phaseContent = document.createElement('div');
-            phaseContent.className = 'p-6';
-            
-            // Descrição
-            const description = document.createElement('p');
-            description.className = 'text-gray-700';
-            description.textContent = phase.description;
-            phaseContent.appendChild(description);
-            
-            // Progresso (apenas para fases em andamento)
-            if (phase.status === 'in-progress') {
-                const progressContainer = document.createElement('div');
-                progressContainer.className = 'mt-6';
-                
-                const progressTitle = document.createElement('h3');
-                progressTitle.className = 'font-medium text-gray-900 mb-3';
-                progressTitle.textContent = 'Progresso';
-                
-                const progressBar = document.createElement('div');
-                progressBar.className = 'progress-bar';
-                
-                const progressBarFill = document.createElement('div');
-                progressBarFill.className = 'progress-bar-fill bg-blue-500';
-                progressBarFill.style.width = `${phase.progress}%`;
-                
-                progressBar.appendChild(progressBarFill);
-                
-                const progressLabels = document.createElement('div');
-                progressLabels.className = 'flex justify-between text-sm text-gray-600 mt-1';
-                progressLabels.innerHTML = `
-                    <span>0%</span>
-                    <span>${phase.progress}% Concluído</span>
-                    <span>100%</span>
-                `;
-                
-                progressContainer.appendChild(progressTitle);
-                progressContainer.appendChild(progressBar);
-                progressContainer.appendChild(progressLabels);
-                
-                phaseContent.appendChild(progressContainer);
-            }
-            
-            // Tarefas da fase
-            const phaseTasks = tasks.filter(task => task.phase_id === phase.id);
-            
-            if (phaseTasks.length > 0) {
-                const tasksContainer = document.createElement('div');
-                tasksContainer.className = 'mt-6';
-                
-                const tasksTitle = document.createElement('h3');
-                tasksTitle.className = 'font-medium text-gray-900 mb-3';
-                tasksTitle.textContent = 'Tarefas Principais';
-                
-                const tasksList = document.createElement('div');
-                tasksList.className = 'space-y-2';
-                
-                phaseTasks.forEach(task => {
-                    const taskItem = document.createElement('div');
-                    taskItem.className = 'task-item';
-                    taskItem.setAttribute('data-task-id', task.id);
-                    
-                    const checkbox = document.createElement('div');
-                    checkbox.className = `task-checkbox ${task.status === 'completed' ? 'completed' : ''}`;
-                    checkbox.innerHTML = task.status === 'completed' ? '<i class="fas fa-check"></i>' : 
-                                         task.status === 'in-progress' ? '<i class="fas fa-spinner"></i>' : 
-                                         '<i class="fas fa-clock"></i>';
-                    
-                    const taskContent = document.createElement('div');
-                    taskContent.innerHTML = `
-                        <span class="font-medium">${task.title}</span>
-                        <span class="text-sm text-gray-500 block">${task.description}</span>
-                    `;
-                    
-                    const taskDate = document.createElement('div');
-                    taskDate.className = 'ml-auto text-sm text-gray-500';
-                    taskDate.textContent = formatDate(new Date(task.due_date));
-                    
-                    taskItem.appendChild(checkbox);
-                    taskItem.appendChild(taskContent);
-                    taskItem.appendChild(taskDate);
-                    
-                    // Adicionar evento de clique para atualizar status da tarefa
-                    checkbox.addEventListener('click', () => toggleTaskStatus(task.id));
-                    
-                    tasksList.appendChild(taskItem);
-                });
-                
-                tasksContainer.appendChild(tasksTitle);
-                tasksContainer.appendChild(tasksList);
-                
-                phaseContent.appendChild(tasksContainer);
-            }
-            
-            phaseCard.appendChild(phaseContent);
-            
-            return phaseCard;
-        }
-        
-        function renderPayments() {
-            if (!payments || payments.length === 0) return;
-            
-            const paymentsContainer = document.getElementById('paymentsContainer');
-            paymentsContainer.innerHTML = '';
-            
-            payments.forEach(payment => {
-                const paymentItem = document.createElement('div');
-                paymentItem.className = `flex items-center p-3 ${payment.status === 'paid' ? 'bg-green-50 border border-green-100' : 'bg-yellow-50 border border-yellow-100'}`;
-                paymentItem.style.borderRadius = '0.5rem';
-                
-                const icon = document.createElement('i');
-                icon.className = `fas fa-money-bill-wave ${payment.status === 'paid' ? 'text-green-500' : 'text-yellow-500'} mr-3`;
-                
-                const content = document.createElement('div');
-                content.innerHTML = `
-                    <span class="font-medium">${payment.title}</span>
-                    <span class="text-sm text-gray-600 block">R$ ${payment.amount.toFixed(2)} (${payment.percentage}%)</span>
-                `;
-                
-                const date = document.createElement('div');
-                date.className = 'ml-auto text-sm';
-                date.innerHTML = `
-                    <span class="block text-right">${formatDate(new Date(payment.due_date))}</span>
-                    <span class="block ${payment.status === 'paid' ? 'text-green-600' : 'text-yellow-600'} font-medium">${payment.status === 'paid' ? 'Pago' : 'Pendente'}</span>
-                `;
-                
-                paymentItem.appendChild(icon);
-                paymentItem.appendChild(content);
-                paymentItem.appendChild(date);
-                
-                paymentsContainer.appendChild(paymentItem);
-            });
-            
-            // Renderizar lista de pagamentos no modal
-            renderPaymentsList();
-        }
-        
-        function renderPaymentsList() {
-            const paymentsList = document.getElementById('paymentsList');
-            
-            if (!payments || payments.length === 0) {
-                paymentsList.innerHTML = '<p class="text-gray-500 text-center py-4">Nenhum pagamento cadastrado</p>';
-                return;
-            }
-            
-            paymentsList.innerHTML = '';
-            
-            payments.forEach(payment => {
-                const paymentItem = document.createElement('div');
-                paymentItem.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2';
-                
-                paymentItem.innerHTML = `
-                    <div class="flex items-center">
-                        <i class="fas fa-money-bill-wave ${payment.status === 'paid' ? 'text-green-500' : 'text-yellow-500'} mr-3"></i>
+            <div class="mt-6">
+                <h3 class="font-medium text-white mb-3">Tarefas Principais</h3>
+                <div class="space-y-2">
+                    <div class="task-item">
+                        <div class="task-checkbox completed">
+                            <i class="fas fa-check"></i>
+                        </div>
                         <div>
-                            <span class="font-medium">${payment.title}</span>
-                            <span class="text-sm text-gray-600 block">R$ ${payment.amount.toFixed(2)} (${payment.percentage}%)</span>
+                            <span class="font-medium text-gray-200">Reunião de Briefing</span>
+                            <span class="text-sm text-gray-400 block">Levantamento inicial de requisitos</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">01/05/2025</div>
+                    </div>
+                    <div class="task-item">
+                        <div class="task-checkbox completed">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-200">Análise de Requisitos</span>
+                            <span class="text-sm text-gray-400 block">Documentação detalhada das necessidades</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">03/05/2025</div>
+                    </div>
+                    <div class="task-item">
+                        <div class="task-checkbox completed">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-200">Criação de Wireframes</span>
+                            <span class="text-sm text-gray-400 block">Esboço das principais telas</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">05/05/2025</div>
+                    </div>
+                    <div class="task-item">
+                        <div class="task-checkbox completed">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-200">Aprovação do Planejamento</span>
+                            <span class="text-sm text-gray-400 block">Validação do escopo e cronograma</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">07/05/2025</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h3 class="font-medium text-white mb-3">Entregas</h3>
+                <div class="flex flex-wrap gap-3">
+                    <div class="tooltip-container">
+                        <div class="bg-gray-800 text-gray-200 px-4 py-2 rounded-lg flex items-center">
+                            <i class="fas fa-file-alt text-primary mr-2"></i>
+                            Documento de Requisitos
+                        </div>
+                        <span class="tooltip-text">Documento detalhando todos os requisitos do projeto</span>
+                    </div>
+                    <div class="tooltip-container">
+                        <div class="bg-gray-800 text-gray-200 px-4 py-2 rounded-lg flex items-center">
+                            <i class="fas fa-sitemap text-primary mr-2"></i>
+                            Mapa do Site
+                        </div>
+                        <span class="tooltip-text">Estrutura de navegação do site</span>
+                    </div>
+                    <div class="tooltip-container">
+                        <div class="bg-gray-800 text-gray-200 px-4 py-2 rounded-lg flex items-center">
+                            <i class="fas fa-pencil-ruler text-primary mr-2"></i>
+                            Wireframes
+                        </div>
+                        <span class="tooltip-text">Esboços de baixa fidelidade das telas</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fase 2: Design UI/UX -->
+    <div class="phase-card mb-8 max-w-4xl mx-auto">
+        <div class="phase-header phase-2">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="phase-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-bold">Design UI/UX</h2>
+                        <div class="flex items-center mt-1">
+                            <span class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">Fase 2</span>
+                            <span class="text-sm ml-3 opacity-90">08/05/2025 - 21/05/2025</span>
                         </div>
                     </div>
-                    <div class="flex items-center">
-                        <span class="text-sm mr-3">${formatDate(new Date(payment.due_date))}</span>
-                        <span class="badge ${payment.status === 'paid' ? 'badge-success' : 'badge-warning'}">${payment.status === 'paid' ? 'Pago' : 'Pendente'}</span>
-                        <button class="ml-2 text-red-500 delete-payment" data-id="${payment.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                `;
-                
-                paymentsList.appendChild(paymentItem);
-            });
+                </div>
+                <div class="status-indicator status-in-progress">
+                    <i class="fas fa-spinner mr-1"></i>
+                    Em Andamento
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-300">Criação do design visual do projeto, incluindo identidade visual, paleta de cores, tipografia e layouts de todas as páginas principais.</p>
             
-            // Adicionar eventos para botões de exclusão
-            document.querySelectorAll('.delete-payment').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    const paymentId = e.currentTarget.getAttribute('data-id');
-                    if (confirm('Tem certeza que deseja excluir este pagamento?')) {
-                        await deletePayment(paymentId);
-                    }
-                });
-            });
-        }
-        
-        // Funções de utilidade
-        function formatDate(date) {
-            return date.toLocaleDateString('pt-BR');
-        }
-        
-        function getStatusClass(status) {
-            switch (status) {
-                case 'completed': return 'status-completed';
-                case 'in-progress': return 'status-in-progress';
-                default: return 'status-pending';
-            }
-        }
-        
-        function getStatusIcon(status) {
-            switch (status) {
-                case 'completed': return 'fas fa-check-circle';
-                case 'in-progress': return 'fas fa-spinner';
-                default: return 'fas fa-clock';
-            }
-        }
-        
-        function getStatusText(status) {
-            switch (status) {
-                case 'completed': return 'Concluído';
-                case 'in-progress': return 'Em Andamento';
-                default: return 'Pendente';
-            }
-        }
-        
-        // Funções para manipulação de dados
-        async function saveProjectData() {
-            const title = document.getElementById('projectTitle').value;
-            const description = document.getElementById('projectDescription').value;
-            const startDate = document.getElementById('projectStartDate').value;
-            const endDate = document.getElementById('projectEndDate').value;
-            const progress = parseInt(document.getElementById('projectProgress').value);
-            const currentPhaseNumber = parseInt(document.getElementById('currentPhase').value);
+            <div class="mt-6">
+                <h3 class="font-medium text-white mb-3">Progresso</h3>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill bg-blue-500" style="width: 60%"></div>
+                </div>
+                <div class="flex justify-between text-sm text-gray-400 mt-1">
+                    <span>0%</span>
+                    <span>60% Concluído</span>
+                    <span>100%</span>
+                </div>
+            </div>
             
-            if (!title || !startDate || !endDate) {
-                alert('Por favor, preencha todos os campos obrigatórios.');
-                return;
-            }
-            
-            const updatedProject = {
-                title,
-                description,
-                start_date: startDate,
-                end_date: endDate,
-                progress,
-                current_phase: currentPhaseNumber,
-                updated_at: new Date().toISOString()
-            };
-            
-            try {
-                const { data, error } = await supabase
-                    .from('projects')
-                    .update(updatedProject)
-                    .eq('id', currentProject.id)
-                    .select();
-                    
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    currentProject = data[0];
-                    renderProject();
-                    closeAdminModal();
-                    alert('Projeto atualizado com sucesso!');
-                }
-            } catch (error) {
-                console.error('Erro ao salvar projeto:', error);
-                alert('Erro ao salvar projeto. Verifique o console para mais detalhes.');
-            }
-        }
-        
-        async function savePhaseData() {
-            const phaseNumber = parseInt(document.getElementById('phaseSelect').value);
-            const title = document.getElementById('phaseTitle').value;
-            const description = document.getElementById('phaseDescription').value;
-            const startDate = document.getElementById('phaseStartDate').value;
-            const endDate = document.getElementById('phaseEndDate').value;
-            const status = document.getElementById('phaseStatus').value;
-            const progress = parseInt(document.getElementById('phaseProgress').value);
-            const icon = document.getElementById('phaseIcon').value;
-            
-            if (!title || !startDate || !endDate) {
-                alert('Por favor, preencha todos os campos obrigatórios.');
-                return;
-            }
-            
-            const phase = phases.find(p => p.phase_number === phaseNumber);
-            
-            if (!phase) {
-                alert('Fase não encontrada.');
-                return;
-            }
-            
-            const updatedPhase = {
-                title,
-                description,
-                start_date: startDate,
-                end_date: endDate,
-                status,
-                progress,
-                icon,
-                updated_at: new Date().toISOString()
-            };
-            
-            try {
-                const { data, error } = await supabase
-                    .from('phases')
-                    .update(updatedPhase)
-                    .eq('id', phase.id)
-                    .select();
-                    
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    // Atualizar fase na lista local
-                    const index = phases.findIndex(p => p.id === phase.id);
-                    if (index !== -1) {
-                        phases[index] = data[0];
-                    }
-                    
-                    renderTimeline();
-                    renderPhases();
-                    closeAdminModal();
-                    alert('Fase atualizada com sucesso!');
-                }
-            } catch (error) {
-                console.error('Erro ao salvar fase:', error);
-                alert('Erro ao salvar fase. Verifique o console para mais detalhes.');
-            }
-        }
-        
-        async function addTaskData() {
-            const phaseNumber = parseInt(document.getElementById('taskPhaseSelect').value);
-            const title = document.getElementById('taskTitle').value;
-            const description = document.getElementById('taskDescription').value;
-            const dueDate = document.getElementById('taskDueDate').value;
-            const status = document.getElementById('taskStatus').value;
-            
-            if (!title || !dueDate) {
-                alert('Por favor, preencha todos os campos obrigatórios.');
-                return;
-            }
-            
-            const phase = phases.find(p => p.phase_number === phaseNumber);
-            
-            if (!phase) {
-                alert('Fase não encontrada.');
-                return;
-            }
-            
-            const newTask = {
-                phase_id: phase.id,
-                title,
-                description,
-                due_date: dueDate,
-                status
-            };
-            
-            try {
-                const { data, error } = await supabase
-                    .from('tasks')
-                    .insert([newTask])
-                    .select();
-                    
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    // Adicionar tarefa à lista local
-                    tasks.push(data[0]);
-                    
-                    // Limpar formulário
-                    document.getElementById('taskTitle').value = '';
-                    document.getElementById('taskDescription').value = '';
-                    document.getElementById('taskDueDate').value = '';
-                    
-                    renderPhases();
-                    loadTasksForPhase(phaseNumber);
-                    alert('Tarefa adicionada com sucesso!');
-                }
-            } catch (error) {
-                console.error('Erro ao adicionar tarefa:', error);
-                alert('Erro ao adicionar tarefa. Verifique o console para mais detalhes.');
-            }
-        }
-        
-        async function addPaymentData() {
-            const title = document.getElementById('paymentTitle').value;
-            const amount = parseFloat(document.getElementById('paymentAmount').value);
-            const percentage = parseInt(document.getElementById('paymentPercentage').value);
-            const dueDate = document.getElementById('paymentDueDate').value;
-            const status = document.getElementById('paymentStatus').value;
-            
-            if (!title || isNaN(amount) || !dueDate) {
-                alert('Por favor, preencha todos os campos obrigatórios.');
-                return;
-            }
-            
-            const newPayment = {
-                project_id: currentProject.id,
-                title,
-                amount,
-                percentage,
-                due_date: dueDate,
-                status
-            };
-            
-            try {
-                const { data, error } = await supabase
-                    .from('payments')
-                    .insert([newPayment])
-                    .select();
-                    
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    // Adicionar pagamento à lista local
-                    payments.push(data[0]);
-                    
-                    // Limpar formulário
-                    document.getElementById('paymentTitle').value = '';
-                    document.getElementById('paymentAmount').value = '';
-                    document.getElementById('paymentPercentage').value = '';
-                    document.getElementById('paymentDueDate').value = '';
-                    
-                    renderPayments();
-                    alert('Pagamento adicionado com sucesso!');
-                }
-            } catch (error) {
-                console.error('Erro ao adicionar pagamento:', error);
-                alert('Erro ao adicionar pagamento. Verifique o console para mais detalhes.');
-            }
-        }
-        
-        async function toggleTaskStatus(taskId) {
-            const task = tasks.find(t => t.id === taskId);
-            
-            if (!task) return;
-            
-            // Alternar status: pendente -> em andamento -> concluído -> pendente
-            let newStatus;
-            if (task.status === 'pending') {
-                newStatus = 'in-progress';
-            } else if (task.status === 'in-progress') {
-                newStatus = 'completed';
-            } else {
-                newStatus = 'pending';
-            }
-            
-            try {
-                const { data, error } = await supabase
-                    .from('tasks')
-                    .update({ status: newStatus, updated_at: new Date().toISOString() })
-                    .eq('id', taskId)
-                    .select();
-                    
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    // Atualizar tarefa na lista local
-                    const index = tasks.findIndex(t => t.id === taskId);
-                    if (index !== -1) {
-                        tasks[index] = data[0];
-                    }
-                    
-                    // Atualizar interface
-                    renderPhases();
-                    
-                    // Atualizar progresso da fase
-                    await updatePhaseProgress(task.phase_id);
-                }
-            } catch (error) {
-                console.error('Erro ao atualizar status da tarefa:', error);
-                alert('Erro ao atualizar status da tarefa. Verifique o console para mais detalhes.');
-            }
-        }
-        
-        async function updatePhaseProgress(phaseId) {
-            const phaseTasks = tasks.filter(t => t.phase_id === phaseId);
-            
-            if (phaseTasks.length === 0) return;
-            
-            const completedTasks = phaseTasks.filter(t => t.status === 'completed').length;
-            const progress = Math.round((completedTasks / phaseTasks.length) * 100);
-            
-            // Determinar status da fase
-            let status = 'pending';
-            if (completedTasks === phaseTasks.length) {
-                status = 'completed';
-            } else if (completedTasks > 0) {
-                status = 'in-progress';
-            }
-            
-            try {
-                const { data, error } = await supabase
-                    .from('phases')
-                    .update({ progress, status, updated_at: new Date().toISOString() })
-                    .eq('id', phaseId)
-                    .select();
-                    
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    // Atualizar fase na lista local
-                    const index = phases.findIndex(p => p.id === phaseId);
-                    if (index !== -1) {
-                        phases[index] = data[0];
-                    }
-                    
-                    // Atualizar interface
-                    renderTimeline();
-                    renderPhases();
-                    
-                    // Atualizar progresso do projeto
-                    await updateProjectProgress();
-                }
-            } catch (error) {
-                console.error('Erro ao atualizar progresso da fase:', error);
-            }
-        }
-        
-        async function updateProjectProgress() {
-            if (phases.length === 0) return;
-            
-            // Calcular progresso médio de todas as fases
-            const totalProgress = phases.reduce((sum, phase) => sum + phase.progress, 0);
-            const progress = Math.round(totalProgress / phases.length);
-            
-            // Determinar fase atual
-            let currentPhase = 1;
-            for (let i = 0; i < phases.length; i++) {
-                if (phases[i].status === 'in-progress') {
-                    currentPhase = phases[i].phase_number;
-                    break;
-                } else if (phases[i].status === 'completed' && i < phases.length - 1 && phases[i + 1].status === 'pending') {
-                    currentPhase = phases[i + 1].phase_number;
-                    break;
-                }
-            }
-            
-            try {
-                const { data, error } = await supabase
-                    .from('projects')
-                    .update({ progress, current_phase: currentPhase, updated_at: new Date().toISOString() })
-                    .eq('id', currentProject.id)
-                    .select();
-                    
-                if (error) throw error;
-                
-                if (data && data.length > 0) {
-                    currentProject = data[0];
-                    renderProject();
-                }
-            } catch (error) {
-                console.error('Erro ao atualizar progresso do projeto:', error);
-            }
-        }
-        
-        async function deletePayment(paymentId) {
-            try {
-                const { error } = await supabase
-                    .from('payments')
-                    .delete()
-                    .eq('id', paymentId);
-                    
-                if (error) throw error;
-                
-                // Remover pagamento da lista local
-                payments = payments.filter(p => p.id !== paymentId);
-                
-                // Atualizar interface
-                renderPayments();
-                alert('Pagamento excluído com sucesso!');
-            } catch (error) {
-                console.error('Erro ao excluir pagamento:', error);
-                alert('Erro ao excluir pagamento. Verifique o console para mais detalhes.');
-            }
-        }
-        
-        async function loadTasksForPhase(phaseNumber) {
-            const phase = phases.find(p => p.phase_number === phaseNumber);
-            
-            if (!phase) {
-                document.getElementById('tasksList').innerHTML = '<p class="text-gray-500 text-center py-4">Fase não encontrada</p>';
-                return;
-            }
-            
-            const phaseTasks = tasks.filter(t => t.phase_id === phase.id);
-            
-            const tasksList = document.getElementById('tasksList');
-            
-            if (phaseTasks.length === 0) {
-                tasksList.innerHTML = '<p class="text-gray-500 text-center py-4">Nenhuma tarefa cadastrada para esta fase</p>';
-                return;
-            }
-            
-            tasksList.innerHTML = '';
-            
-            phaseTasks.forEach(task => {
-                const taskItem = document.createElement('div');
-                taskItem.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2';
-                
-                taskItem.innerHTML = `
-                    <div class="flex items-center">
-                        <div class="task-checkbox ${task.status === 'completed' ? 'completed' : ''}" data-task-id="${task.id}">
-                            ${task.status === 'completed' ? '<i class="fas fa-check"></i>' : 
-                              task.status === 'in-progress' ? '<i class="fas fa-spinner"></i>' : 
-                              '<i class="fas fa-clock"></i>'}
+            <div class="mt-6">
+                <h3 class="font-medium text-white mb-3">Tarefas Principais</h3>
+                <div class="space-y-2">
+                    <div class="task-item">
+                        <div class="task-checkbox completed">
+                            <i class="fas fa-check"></i>
                         </div>
-                        <div class="ml-3">
-                            <span class="font-medium">${task.title}</span>
-                            <span class="text-sm text-gray-600 block">${task.description}</span>
+                        <div>
+                            <span class="font-medium text-gray-200">Definição de Identidade Visual</span>
+                            <span class="text-sm text-gray-400 block">Cores, tipografia e elementos de marca</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">10/05/2025</div>
+                    </div>
+                    <div class="task-item">
+                        <div class="task-checkbox completed">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-200">Design da Homepage</span>
+                            <span class="text-sm text-gray-400 block">Layout da página inicial</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">14/05/2025</div>
+                    </div>
+                    <div class="task-item">
+                        <div class="task-checkbox">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-200">Design das Páginas Internas</span>
+                            <span class="text-sm text-gray-400 block">Layouts de todas as páginas secundárias</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">18/05/2025</div>
+                    </div>
+                    <div class="task-item">
+                        <div class="task-checkbox">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-200">Aprovação Final do Design</span>
+                            <span class="text-sm text-gray-400 block">Validação com o cliente</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">21/05/2025</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <h3 class="font-medium text-white mb-3">Entregas</h3>
+                <div class="flex flex-wrap gap-3">
+                    <div class="tooltip-container">
+                        <div class="bg-gray-800 text-gray-200 px-4 py-2 rounded-lg flex items-center">
+                            <i class="fas fa-swatchbook text-secondary mr-2"></i>
+                            Guia de Estilo
+                        </div>
+                        <span class="tooltip-text">Documentação de cores, tipografia e componentes</span>
+                    </div>
+                    <div class="tooltip-container">
+                        <div class="bg-gray-800 text-gray-200 px-4 py-2 rounded-lg flex items-center">
+                            <i class="fas fa-desktop text-secondary mr-2"></i>
+                            Mockups de Alta Fidelidade
+                        </div>
+                        <span class="tooltip-text">Designs finalizados de todas as páginas</span>
+                    </div>
+                    <div class="tooltip-container">
+                        <div class="bg-gray-800 text-gray-200 px-4 py-2 rounded-lg flex items-center">
+                            <i class="fas fa-mobile-alt text-secondary mr-2"></i>
+                            Protótipo Interativo
+                        </div>
+                        <span class="tooltip-text">Versão navegável do design para testes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fase 3: Desenvolvimento Frontend -->
+    <div class="phase-card mb-8 max-w-4xl mx-auto">
+        <div class="phase-header phase-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="phase-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-bold">Desenvolvimento Frontend</h2>
+                        <div class="flex items-center mt-1">
+                            <span class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">Fase 3</span>
+                            <span class="text-sm ml-3 opacity-90">22/05/2025 - 04/06/2025</span>
                         </div>
                     </div>
-                    <div class="flex items-center">
-                        <span class="text-sm mr-3">${formatDate(new Date(task.due_date))}</span>
-                        <button class="text-red-500 delete-task" data-id="${task.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                </div>
+                <div class="status-indicator status-pending">
+                    <i class="fas fa-clock mr-1"></i>
+                    Pendente
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-300">Codificação da interface do usuário, implementação do design aprovado em HTML/CSS, garantindo responsividade e compatibilidade com diferentes navegadores.</p>
+            
+            <div class="mt-6">
+                <h3 class="font-medium text-white mb-3">Tarefas Principais</h3>
+                <div class="space-y-2">
+                    <div class="task-item">
+                        <div class="task-checkbox">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-200">Estrutura HTML</span>
+                            <span class="text-sm text-gray-400 block">Codificação da estrutura base</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">22/05/2025</div>
                     </div>
-                `;
-                
-                tasksList.appendChild(taskItem);
-            });
+                    <div class="task-item">
+                        <div class="task-checkbox">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-200">Estilização CSS/Tailwind</span>
+                            <span class="text-sm text-gray-400 block">Implementação visual do design</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">26/05/2025</div>
+                    </div>
+                    <div class="task-item">
+                        <div class="task-checkbox">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-200">Responsividade</span>
+                            <span class="text-sm text-gray-400 block">Adaptação para diferentes dispositivos</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">30/05/2025</div>
+                    </div>
+                    <div class="task-item">
+                        <div class="task-checkbox">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-200">Testes de Compatibilidade</span>
+                            <span class="text-sm text-gray-400 block">Verificação em diferentes navegadores</span>
+                        </div>
+                        <div class="ml-auto text-sm text-gray-400">04/06/2025</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fase 4: Desenvolvimento Backend -->
+    <div class="phase-card mb-8 max-w-4xl mx-auto">
+        <div class="phase-header phase-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="phase-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-bold">Desenvolvimento Backend</h2>
+                        <div class="flex items-center mt-1">
+                            <span class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">Fase 4</span>
+                            <span class="text-sm ml-3 opacity-90">05/06/2025 - 18/06/2025</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="status-indicator status-pending">
+                    <i class="fas fa-clock mr-1"></i>
+                    Pendente
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-300">Implementação da lógica de negócios, banco de dados, APIs e funcionalidades do sistema. Integração com serviços de terceiros conforme necessário.</p>
             
-            // Adicionar eventos para checkboxes e botões de exclusão
-            document.querySelectorAll('.task-checkbox[data-task-id]').forEach(checkbox => {
-                checkbox.addEventListener('click', () => {
-                    const taskId = checkbox.getAttribute('data-task-id');
-                    toggleTaskStatus(taskId);
-                    loadTasksForPhase(phaseNumber);
-                });
-            });
+            <div class="mt-6">
+                <h3 class="font-medium text-white mb-3">Funcionalidades Principais</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-700">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 bg-gray-800 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Funcionalidade</th>
+                                <th class="px-6 py-3 bg-gray-800 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Complexidade</th>
+                                <th class="px-6 py-3 bg-gray-800 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-gray-800 divide-y divide-gray-700">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-user-lock text-blue-500 mr-2"></i>
+                                        <span class="font-medium text-gray-200">Autenticação de Usuários</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-900 text-yellow-200">Média</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-700 text-gray-200">Pendente</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-credit-card text-blue-500 mr-2"></i>
+                                        <span class="font-medium text-gray-200">Integração de Pagamentos</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-900 text-red-200">Alta</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-700 text-gray-200">Pendente</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-bell text-blue-500 mr-2"></i>
+                                        <span class="font-medium text-gray-200">Sistema de Notificações</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-900 text-green-200">Baixa</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-700 text-gray-200">Pendente</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fase 5: Testes e Otimização -->
+    <div class="phase-card mb-8 max-w-4xl mx-auto">
+        <div class="phase-header phase-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="phase-icon">
+                        <i class="fas fa-vial"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-bold">Testes e Otimização</h2>
+                        <div class="flex items-center mt-1">
+                            <span class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">Fase 5</span>
+                            <span class="text-sm ml-3 opacity-90">19/06/2025 - 25/06/2025</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="status-indicator status-pending">
+                    <i class="fas fa-clock mr-1"></i>
+                    Pendente
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-300">Testes de usabilidade, performance e segurança. Correção de bugs e otimização do código para melhor desempenho e experiência do usuário.</p>
             
-            document.querySelectorAll('.delete-task').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    const taskId = e.currentTarget.getAttribute('data-id');
-                    if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
-                        try {
-                            const { error } = await supabase
-                                .from('tasks')
-                                .delete()
-                                .eq('id', taskId);
-                                
-                            if (error) throw error;
-                            
-                            // Remover tarefa da lista local
-                            tasks = tasks.filter(t => t.id !== taskId);
-                            
-                            // Atualizar interface
-                            renderPhases();
-                            loadTasksForPhase(phaseNumber);
-                            
-                            // Atualizar progresso da fase
-                            await updatePhaseProgress(phase.id);
-                            
-                            alert('Tarefa excluída com sucesso!');
-                        } catch (error) {
-                            console.error('Erro ao excluir tarefa:', error);
-                            alert('Erro ao excluir tarefa. Verifique o console para mais detalhes.');
-                        }
-                    }
-                });
-            });
-        }
-        
-        // Funções para manipulação do modal
-        function openAdminModal() {
-            adminModal.classList.remove('hidden');
-            showProjectTab();
-        }
-        
-        function closeAdminModal() {
-            adminModal.classList.add('hidden');
-        }
-        
-        function showProjectTab() {
-            projectTab.classList.add('tab-active');
-            phasesTab.classList.remove('tab-active');
-            tasksTab.classList.remove('tab-active');
-            paymentsTab.classList.remove('tab-active');
+            <div class="mt-6">
+                <h3 class="font-medium text-white mb-3">Métricas de Qualidade</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-300">Performance</span>
+                            <span class="text-sm font-medium text-green-400">Meta: 90+</span>
+                        </div>
+                        <div class="relative pt-1">
+                            <div class="overflow-hidden h-2 text-xs flex rounded bg-gray-700">
+                                <div class="w-0 bg-green-500 rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-300">Acessibilidade</span>
+                            <span class="text-sm font-medium text-green-400">Meta: 95+</span>
+                        </div>
+                        <div class="relative pt-1">
+                            <div class="overflow-hidden h-2 text-xs flex rounded bg-gray-700">
+                                <div class="w-0 bg-green-500 rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-300">SEO</span>
+                            <span class="text-sm font-medium text-green-400">Meta: 90+</span>
+                        </div>
+                        <div class="relative pt-1">
+                            <div class="overflow-hidden h-2 text-xs flex rounded bg-gray-700">
+                                <div class="w-0 bg-green-500 rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fase 6: Lançamento e Entrega -->
+    <div class="phase-card mb-8 max-w-4xl mx-auto">
+        <div class="phase-header phase-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="phase-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-bold">Lançamento e Entrega</h2>
+                        <div class="flex items-center mt-1">
+                            <span class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">Fase Final</span>
+                            <span class="text-sm ml-3 opacity-90">26/06/2025 - 30/06/2025</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="status-indicator status-pending">
+                    <i class="fas fa-clock mr-1"></i>
+                    Pendente
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <p class="text-gray-300">Implantação do projeto em ambiente de produção, configuração de domínio, SSL e servidores. Treinamento do cliente e documentação final.</p>
             
-            projectForm.classList.remove('hidden');
-            phasesForm.classList.add('hidden');
-            tasksForm.classList.add('hidden');
-            paymentsForm.classList.add('hidden');
-        }
+            <div class="mt-6">
+                <h3 class="font-medium text-white mb-3">Checklist de Lançamento</h3>
+                <div class="space-y-2">
+                    <div class="flex items-center p-3 bg-gray-800 rounded-lg">
+                        <div class="w-5 h-5 border-2 border-gray-600 rounded mr-3"></div>
+                        <span class="text-gray-300">Configuração do servidor de produção</span>
+                    </div>
+                    <div class="flex items-center p-3 bg-gray-800 rounded-lg">
+                        <div class="w-5 h-5 border-2 border-gray-600 rounded mr-3"></div>
+                        <span class="text-gray-300">Configuração de domínio e DNS</span>
+                    </div>
+                    <div class="flex items-center p-3 bg-gray-800 rounded-lg">
+                        <div class="w-5 h-5 border-2 border-gray-600 rounded mr-3"></div>
+                        <span class="text-gray-300">Instalação de certificado SSL</span>
+                    </div>
+                    <div class="flex items-center p-3 bg-gray-800 rounded-lg">
+                        <div class="w-5 h-5 border-2 border-gray-600 rounded mr-3"></div>
+                        <span class="text-gray-300">Testes finais em ambiente de produção</span>
+                    </div>
+                    <div class="flex items-center p-3 bg-gray-800 rounded-lg">
+                        <div class="w-5 h-5 border-2 border-gray-600 rounded mr-3"></div>
+                        <span class="text-gray-300">Treinamento do cliente</span>
+                    </div>
+                    <div class="flex items-center p-3 bg-gray-800 rounded-lg">
+                        <div class="w-5 h-5 border-2 border-gray-600 rounded mr-3"></div>
+                        <span class="text-gray-300">Entrega da documentação final</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Informações Adicionais -->
+<section class="container mx-auto px-4 py-8">
+    <div class="bg-gray-900 rounded-lg shadow-md p-6 max-w-4xl mx-auto border border-gray-700">
+        <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+            <i class="fas fa-info-circle text-primary mr-2"></i>
+            Informações Adicionais
+        </h2>
+        <div class="divider bg-gray-700 h-px my-4"></div>
         
-        function showPhasesTab() {
-            projectTab.classList.remove('tab-active');
-            phasesTab.classList.add('tab-active');
-            tasksTab.classList.remove('tab-active');
-            paymentsTab.classList.remove('tab-active');
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="font-medium text-white mb-3">Comunicação</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center p-3 bg-blue-900 bg-opacity-30 rounded-lg border border-blue-800">
+                        <i class="fas fa-video text-blue-400 mr-3"></i>
+                        <div>
+                            <span class="font-medium text-gray-200">Reuniões Semanais</span>
+                            <span class="text-sm text-gray-400 block">Toda segunda-feira às 10h</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-3 bg-blue-900 bg-opacity-30 rounded-lg border border-blue-800">
+                        <i class="fas fa-comments text-blue-400 mr-3"></i>
+                        <div>
+                            <span class="font-medium text-gray-200">Atualizações Diárias</span>
+                            <span class="text-sm text-gray-400 block">Via e-mail ou chat</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            projectForm.classList.add('hidden');
-            phasesForm.classList.remove('hidden');
-            tasksForm.classList.add('hidden');
-            paymentsForm.classList.add('hidden');
-            
-            // Carregar dados da fase selecionada
-            loadPhaseData();
-        }
+            <div>
+                <h3 class="font-medium text-white mb-3">Pagamentos</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center p-3 bg-green-900 bg-opacity-30 rounded-lg border border-green-800">
+                        <i class="fas fa-money-bill-wave text-green-400 mr-3"></i>
+                        <div>
+                            <span class="font-medium text-gray-200">30% - Início do Projeto</span>
+                            <span class="text-sm text-gray-400 block">01/05/2025</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-3 bg-green-900 bg-opacity-30 rounded-lg border border-green-800">
+                        <i class="fas fa-money-bill-wave text-green-400 mr-3"></i>
+                        <div>
+                            <span class="font-medium text-gray-200">40% - Aprovação do Design</span>
+                            <span class="text-sm text-gray-400 block">21/05/2025</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-3 bg-green-900 bg-opacity-30 rounded-lg border border-green-800">
+                        <i class="fas fa-money-bill-wave text-green-400 mr-3"></i>
+                        <div>
+                            <span class="font-medium text-gray-200">30% - Entrega Final</span>
+                            <span class="text-sm text-gray-400 block">30/06/2025</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
-        function showTasksTab() {
-            projectTab.classList.remove('tab-active');
-            phasesTab.classList.remove('tab-active');
-            tasksTab.classList.add('tab-active');
-            paymentsTab.classList.remove('tab-active');
-            
-            projectForm.classList.add('hidden');
-            phasesForm.classList.add('hidden');
-            tasksForm.classList.remove('hidden');
-            paymentsForm.classList.add('hidden');
-            
-            // Carregar tarefas da fase selecionada
-            const phaseNumber = parseInt(document.getElementById('taskPhaseSelect').value);
-            loadTasksForPhase(phaseNumber);
-        }
-        
-        function showPaymentsTab() {
-            projectTab.classList.remove('tab-active');
-            phasesTab.classList.remove('tab-active');
-            tasksTab.classList.remove('tab-active');
-            paymentsTab.classList.add('tab-active');
-            
-            projectForm.classList.add('hidden');
-            phasesForm.classList.add('hidden');
-            tasksForm.classList.add('hidden');
-            paymentsForm.classList.remove('hidden');
-            
-            // Renderizar lista de pagamentos
-            renderPaymentsList();
-        }
-        
-        function loadPhaseData() {
-            const phaseNumber = parseInt(document.getElementById('phaseSelect').value);
-            const phase = phases.find(p => p.phase_number === phaseNumber);
-            
-            if (!phase) return;
-            
-            document.getElementById('phaseTitle').value = phase.title;
-            document.getElementById('phaseDescription').value = phase.description;
-            document.getElementById('phaseStartDate').value = phase.start_date;
-            document.getElementById('phaseEndDate').value = phase.end_date;
-            document.getElementById('phaseStatus').value = phase.status;
-            document.getElementById('phaseProgress').value = phase.progress;
-            document.getElementById('phaseIcon').value = phase.icon;
-        }
-        
-        // Event Listeners
-        adminButton.addEventListener('click', openAdminModal);
-        closeProjectModal.addEventListener('click', closeAdminModal);
-        closePhasesModal.addEventListener('click', closeAdminModal);
-        closeTasksModal.addEventListener('click', closeAdminModal);
-        closePaymentsModal.addEventListener('click', closeAdminModal);
-        
-        projectTab.addEventListener('click', showProjectTab);
-        phasesTab.addEventListener('click', showPhasesTab);
-        tasksTab.addEventListener('click', showTasksTab);
-        paymentsTab.addEventListener('click', showPaymentsTab);
-        
-        saveProject.addEventListener('click', saveProjectData);
-        savePhase.addEventListener('click', savePhaseData);
-        addTask.addEventListener('click', addTaskData);
-        addPayment.addEventListener('click', addPaymentData);
-        
-        phaseSelect.addEventListener('change', loadPhaseData);
-        taskPhaseSelect.addEventListener('change', () => {
-            const phaseNumber = parseInt(taskPhaseSelect.value);
-            loadTasksForPhase(phaseNumber);
-        });
-        
-        printButton.addEventListener('click', () => {
-            window.print();
-        });
-        
-        // Inicializar aplicação
-        init();
-    </script>
+        <div class="mt-6 p-4 bg-yellow-900 bg-opacity-30 rounded-lg border border-yellow-800">
+            <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-400 mt-1 mr-3"></i>
+                <div>
+                    <span class="font-medium text-gray-200">Observação Importante</span>
+                    <p class="text-sm text-gray-300 mt-1">Este roadmap é um documento vivo e pode ser ajustado conforme o andamento do projeto. Alterações significativas no escopo podem impactar o cronograma e os custos. Todas as mudanças serão comunicadas e acordadas previamente.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Botão de Impressão -->
+<div class="print-button">
+    <i class="fas fa-print"></i>
+</div>
 </body>
 </html>

@@ -1,0 +1,309 @@
+    :root {
+        --primary-color: #6366f1;
+        --secondary-color: #0ea5e9;
+        --accent-color: #a78bfa;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --error-color: #ef4444;
+        --info-color: #3b82f6;
+        --neutral-color: #9ca3af;
+    }
+    
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #e5e7eb;
+        background-color: #111827;
+    }
+    
+    .progress-line {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background-color: #374151;
+        transform: translateX(-50%);
+        z-index: 0;
+    }
+    
+    .progress-line-fill {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        width: 4px;
+        background-color: var(--primary-color);
+        transform: translateX(-50%);
+        z-index: 1;
+        transition: height 0.5s ease;
+    }
+    
+    .phase-card {
+        position: relative;
+        z-index: 2;
+        transition: all 0.3s ease;
+        border-radius: 1rem;
+        overflow: hidden;
+        background-color: #1f2937;
+        border: 1px solid #374151;
+    }
+    
+    .phase-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    }
+    
+    .phase-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 1.5rem;
+    }
+    
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    
+    .status-pending {
+        background-color: #374151;
+        color: #d1d5db;
+    }
+    
+    .status-in-progress {
+        background-color: #1e3a8a;
+        color: #93c5fd;
+    }
+    
+    .status-completed {
+        background-color: #064e3b;
+        color: #6ee7b7;
+    }
+    
+    .timeline-connector {
+        position: relative;
+        height: 2px;
+        background-color: #374151;
+        flex-grow: 1;
+    }
+    
+    .timeline-connector.active {
+        background-color: var(--primary-color);
+    }
+    
+    .timeline-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #374151;
+        border: 2px solid #1f2937;
+        box-shadow: 0 0 0 2px #374151;
+    }
+    
+    .timeline-dot.active {
+        background-color: var(--primary-color);
+        box-shadow: 0 0 0 2px var(--primary-color);
+    }
+    
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background-color: #374151;
+        overflow: hidden;
+    }
+    
+    .progress-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+    
+    .task-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        transition: background-color 0.2s ease;
+    }
+    
+    .task-item:hover {
+        background-color: #2d3748;
+    }
+    
+    .task-checkbox {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #4b5563;
+        margin-right: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.75rem;
+    }
+    
+    .task-checkbox.completed {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+    
+    .phase-header {
+        border-radius: 0.75rem 0.75rem 0 0;
+        padding: 1.5rem;
+        color: white;
+    }
+    
+    .phase-1 { background-color: var(--primary-color); }
+    .phase-2 { background-color: var(--secondary-color); }
+    .phase-3 { background-color: var(--accent-color); }
+    .phase-4 { background-color: var(--info-color); }
+    .phase-5 { background-color: var(--success-color); }
+    .phase-6 { background-color: var(--warning-color); }
+    
+    .tooltip-container {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .tooltip-text {
+        visibility: hidden;
+        position: absolute;
+        z-index: 100;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #4b5563;
+        color: white;
+        text-align: center;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    
+    .tooltip-container:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+    
+    .tooltip-text::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #4b5563 transparent transparent transparent;
+    }
+    
+    .summary-card {
+        border-radius: 1rem;
+        background-color: #1f2937;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        border: 1px solid #374151;
+    }
+    
+    .summary-card:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .summary-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .summary-primary { background-color: var(--primary-color); }
+    .summary-secondary { background-color: var(--secondary-color); }
+    .summary-accent { background-color: var(--accent-color); }
+    .summary-success { background-color: var(--success-color); }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin-right: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+    }
+    
+    .legend-pending { background-color: #6b7280; }
+    .legend-progress { background-color: var(--info-color); }
+    .legend-completed { background-color: var(--success-color); }
+    
+    .print-button {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .print-button:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    }
+    
+    @media print {
+        .print-button {
+            display: none;
+        }
+        
+        body {
+            background-color: white;
+            color: black;
+        }
+        
+        .phase-card {
+            background-color: white;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .phase-card:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .summary-card {
+            background-color: white;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .summary-card:hover {
+            box-shadow: none;
+        }
+    }
